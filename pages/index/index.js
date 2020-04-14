@@ -2,6 +2,7 @@
 //获取应用实例
 const app = getApp()
 let audio = null
+let isPlay = false
 
 Page({
   data: {
@@ -11,7 +12,7 @@ Page({
     canIUse: wx.canIUse('button.open-type.getUserInfo'),
   },
   //事件处理函数
-  bindViewTap: function() {
+  bindViewTap: function () {
     wx.navigateTo({
       url: '../logs/logs'
     })
@@ -22,7 +23,7 @@ Page({
         userInfo: app.globalData.userInfo,
         hasUserInfo: true
       })
-    } else if (this.data.canIUse){
+    } else if (this.data.canIUse) {
       // 由于 getUserInfo 是网络请求，可能会在 Page.onLoad 之后才返回
       // 所以此处加入 callback 以防止这种情况
       app.userInfoReadyCallback = res => {
@@ -43,22 +44,17 @@ Page({
         }
       })
     }
-
-    wx.startAccelerometer({
-      interval: 'normal',
-      success: (res) => {
-        this.createAudio()
-       },
-    })
-
-    wx.onAccelerometerChange((res) => {
-      if(res.x > 2){
-        this.playAudio()
-      }
-    })
-
   },
-  getUserInfo: function(e) {
+  onShow: function () {
+    this.beginAccelerometer()
+  },
+  onHide: function () {
+    this.endAccelerometer();
+  },
+  onUnload: function () {
+    this.endAccelerometer()
+  },
+  getUserInfo: function (e) {
     console.log(e)
     app.globalData.userInfo = e.detail.userInfo
     this.setData({
@@ -66,11 +62,35 @@ Page({
       hasUserInfo: true
     })
   },
-  createAudio: () => {
-    audio = wx.createInnerAudioContext()
-    audio.src = 'asset/audio/6472.mp3'
+  beginAccelerometer: function () {
+    wx.startAccelerometer({
+      interval: 'normal',
+      success: (res) => {
+        this.createAudio()
+        wx.onAccelerometerChange((res) => {
+          if (res.x > 1.3) {
+            this.playAudio()
+          }
+        })
+      },
+    })
   },
-  playAudio: () => {
-    audio.play()
+  endAccelerometer: function () {
+    wx.stopAccelerometer()
+  },
+  createAudio: function () {
+    audio = wx.createInnerAudioContext()
+    audio.src = 'asset/audio/whip_7.mp3'
+    audio.onPlay(() => {
+      isPlay = true
+    })
+    audio.onEnded(() => {
+      isPlay = false
+    })
+  },
+  playAudio: function () {
+    if(!isPlay){
+      audio.play()
+    }
   }
 })
